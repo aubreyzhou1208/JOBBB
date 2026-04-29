@@ -179,7 +179,7 @@ function buildSyncMessage(status: JobSyncRun["status"], createdCount: number, up
 }
 
 function dedupeJobInputs(jobs: JobPostingInput[]) {
-  const deduped = new Map<string, JobPostingInput>();
+  const deduped = new Map<string, JobPostingInput & ReturnType<typeof normalizeJobPosting>>();
 
   for (const job of jobs) {
     deduped.set(buildDedupeKey(job), normalizeJobPosting(job));
