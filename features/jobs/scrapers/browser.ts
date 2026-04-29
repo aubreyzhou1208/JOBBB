@@ -1,30 +1,39 @@
 /**
  * Shared browser launcher for Puppeteer-based providers.
  * Uses @sparticuz/chromium on Lambda/Render, local Chrome otherwise.
+ * Both puppeteer-core and @sparticuz/chromium are optional dependencies.
  */
-import puppeteer, { Browser } from "puppeteer-core";
 
-let _browser: Browser | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _browser: any = null;
 
-export async function getBrowser(): Promise<Browser> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function getBrowser(): Promise<any> {
   if (_browser && _browser.connected) return _browser;
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const puppeteer = await import("puppeteer-core").then((m) => m.default ?? m).catch(() => {
+    throw new Error("puppeteer-core is not installed. Add it as a dependency.");
+  });
 
   const isLambda = !!process.env.AWS_LAMBDA_FUNCTION_NAME || !!process.env.RENDER;
 
   if (isLambda) {
-    const chromium = await import("@sparticuz/chromium");
+    const chromium = await import("@sparticuz/chromium").then((m) => m.default ?? m).catch(() => {
+      throw new Error("@sparticuz/chromium is not installed on this server.");
+    });
     _browser = await puppeteer.launch({
-      args: chromium.default.args,
-      executablePath: await chromium.default.executablePath(),
+      args: chromium.args,
+      executablePath: await chromium.executablePath(),
       headless: true,
     });
   } else {
-    // Local dev: find system Chrome
     const paths = [
       "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
       "/usr/bin/google-chrome",
       "/usr/bin/chromium-browser",
     ];
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const executablePath = paths.find((p) => {
       try { require("fs").accessSync(p); return true; } catch { return false; }
     });
@@ -45,9 +54,7 @@ export async function fetchPageJson(url: string, waitFor?: string): Promise<unkn
     await page.goto(url, { waitUntil: "networkidle2", timeout: 30000 });
     if (waitFor) await page.waitForSelector(waitFor, { timeout: 10000 }).catch(() => {});
 
-    // Try to extract JSON from the page's XHR responses by evaluating window.__INITIAL_STATE__ or similar
     const data = await page.evaluate(() => {
-      // Common patterns Chinese SPAs use to embed data
       const w = window as unknown as Record<string, unknown>;
       return w.__INITIAL_STATE__ ?? w.__INITIAL_DATA__ ?? w.__SERVER_DATA__ ?? null;
     });
