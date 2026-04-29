@@ -8,6 +8,9 @@ export class JDProvider extends JobProvider {
   readonly companyName = "京东";
 
   async fetchJobs(): Promise<ScrapedJob[]> {
+    const cookies = process.env.JD_COOKIES;
+    if (!cookies) return [];
+
     const jobs: ScrapedJob[] = [];
 
     for (const category of ["campus", "intern"]) {
@@ -16,7 +19,7 @@ export class JDProvider extends JobProvider {
       while (true) {
         const res = await this.fetchWithTimeout(
           `${BASE_URL}?page=${page}&pageSize=50&category=${category}`,
-          { headers: this.headers({ Referer: "https://campus.jd.com/" }) }
+          { headers: this.headers({ Cookie: cookies, Referer: "https://campus.jd.com/" }) }
         );
 
         if (!res.ok) break;

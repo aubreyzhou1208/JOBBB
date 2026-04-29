@@ -8,6 +8,9 @@ export class MeituanProvider extends JobProvider {
   readonly companyName = "美团";
 
   async fetchJobs(): Promise<ScrapedJob[]> {
+    const cookies = process.env.MEITUAN_COOKIES;
+    if (!cookies) return [];
+
     const jobs: ScrapedJob[] = [];
 
     for (const jobType of ["campus", "intern"]) {
@@ -16,7 +19,7 @@ export class MeituanProvider extends JobProvider {
       while (true) {
         const res = await this.fetchWithTimeout(
           `${BASE_URL}?page=${page}&pageSize=50&jobType=${jobType}`,
-          { headers: this.headers({ Referer: "https://campus.meituan.com/" }) }
+          { headers: this.headers({ Cookie: cookies, Referer: "https://campus.meituan.com/" }) }
         );
 
         if (!res.ok) break;

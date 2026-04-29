@@ -8,6 +8,9 @@ export class KuaishouProvider extends JobProvider {
   readonly companyName = "快手";
 
   async fetchJobs(): Promise<ScrapedJob[]> {
+    const cookies = process.env.KUAISHOU_COOKIES;
+    if (!cookies) return [];
+
     const jobs: ScrapedJob[] = [];
 
     for (const type of ["campus", "intern"]) {
@@ -16,7 +19,7 @@ export class KuaishouProvider extends JobProvider {
       while (true) {
         const res = await this.fetchWithTimeout(
           `${BASE_URL}?page=${page}&pageSize=50&positionType=${type}`,
-          { headers: this.headers({ Referer: "https://campus.kuaishou.com/" }) }
+          { headers: this.headers({ Cookie: cookies, Referer: "https://campus.kuaishou.com/" }) }
         );
 
         if (!res.ok) break;

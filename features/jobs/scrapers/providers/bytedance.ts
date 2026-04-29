@@ -12,9 +12,11 @@ export class ByteDanceProvider extends JobProvider {
   readonly companyName = "字节跳动";
 
   async fetchJobs(): Promise<ScrapedJob[]> {
+    const cookies = process.env.BYTEDANCE_COOKIES;
+    if (!cookies) return [];
+
     const jobs: ScrapedJob[] = [];
 
-    // Try the public job listing endpoint - campus + intern
     for (const jobType of ["campus", "intern"]) {
       let page = 1;
       while (true) {
@@ -22,6 +24,7 @@ export class ByteDanceProvider extends JobProvider {
           `${SEARCH_URL}?type=${jobType}&page=${page}&limit=50&location=CN`,
           {
             headers: this.headers({
+              Cookie: cookies,
               Referer: "https://jobs.bytedance.com/",
               Origin: "https://jobs.bytedance.com",
             }),

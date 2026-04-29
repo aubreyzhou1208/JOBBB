@@ -8,6 +8,9 @@ export class BaiduProvider extends JobProvider {
   readonly companyName = "百度";
 
   async fetchJobs(): Promise<ScrapedJob[]> {
+    const cookies = process.env.BAIDU_COOKIES;
+    if (!cookies) return [];
+
     const jobs: ScrapedJob[] = [];
 
     for (const projectType of ["校园招聘", "实习生招募"]) {
@@ -16,7 +19,7 @@ export class BaiduProvider extends JobProvider {
       while (true) {
         const url = `${BASE_URL}?pageNo=${pageNo}&pageSize=50&projectType=${encodeURIComponent(projectType)}`;
         const res = await this.fetchWithTimeout(url, {
-          headers: this.headers({ Referer: "https://talent.baidu.com/external/baidu/campus.html" }),
+          headers: this.headers({ Cookie: cookies, Referer: "https://talent.baidu.com/external/baidu/campus.html" }),
         });
 
         if (!res.ok) break;

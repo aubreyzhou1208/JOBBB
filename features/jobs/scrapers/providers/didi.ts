@@ -8,6 +8,9 @@ export class DiDiProvider extends JobProvider {
   readonly companyName = "滴滴";
 
   async fetchJobs(): Promise<ScrapedJob[]> {
+    const cookies = process.env.DIDI_COOKIES;
+    if (!cookies) return [];
+
     const jobs: ScrapedJob[] = [];
 
     for (const jobType of [1, 2]) { // 1=校招, 2=实习
@@ -16,7 +19,7 @@ export class DiDiProvider extends JobProvider {
       while (true) {
         const res = await this.fetchWithTimeout(BASE_URL, {
           method: "POST",
-          headers: this.headers({ "Content-Type": "application/json", Referer: "https://campus.didiglobal.com/" }),
+          headers: this.headers({ "Content-Type": "application/json", Cookie: cookies, Referer: "https://campus.didiglobal.com/" }),
           body: JSON.stringify({ pageNo, pageSize: 50, jobType, keyword: "" }),
         });
 

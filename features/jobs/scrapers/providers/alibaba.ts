@@ -9,6 +9,9 @@ export class AlibabaProvider extends JobProvider {
   readonly companyName = "阿里巴巴";
 
   async fetchJobs(): Promise<ScrapedJob[]> {
+    const cookies = process.env.ALIBABA_COOKIES;
+    if (!cookies) return [];
+
     const jobs: ScrapedJob[] = [];
 
     for (const jobType of [1, 2]) { // 1=校招, 2=实习
@@ -17,7 +20,7 @@ export class AlibabaProvider extends JobProvider {
       while (true) {
         const res = await this.fetchWithTimeout(BASE_URL, {
           method: "POST",
-          headers: this.headers({ "Content-Type": "application/json", Referer: "https://talent.alibaba.com/" }),
+          headers: this.headers({ "Content-Type": "application/json", Cookie: cookies, Referer: "https://talent.alibaba.com/" }),
           body: JSON.stringify({ pageIndex, pageSize: 50, jobType, keyword: "" }),
         });
 

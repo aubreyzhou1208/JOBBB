@@ -8,6 +8,9 @@ export class XiaohongshuProvider extends JobProvider {
   readonly companyName = "小红书";
 
   async fetchJobs(): Promise<ScrapedJob[]> {
+    const cookies = process.env.XIAOHONGSHU_COOKIES;
+    if (!cookies) return [];
+
     const jobs: ScrapedJob[] = [];
 
     for (const type of ["campus", "intern"]) {
@@ -16,7 +19,7 @@ export class XiaohongshuProvider extends JobProvider {
       while (true) {
         const res = await this.fetchWithTimeout(
           `${BASE_URL}?page=${page}&pageSize=50&type=${type}`,
-          { headers: this.headers({ Referer: "https://job.xiaohongshu.com/" }) }
+          { headers: this.headers({ Cookie: cookies, Referer: "https://job.xiaohongshu.com/" }) }
         );
 
         if (!res.ok) break;

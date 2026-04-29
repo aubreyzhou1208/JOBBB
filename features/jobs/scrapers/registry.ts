@@ -29,7 +29,7 @@ export const ALL_PROVIDERS: JobProvider[] = [
   // ── ACTIVE ────────────────────────────────────────────────
   new TencentProvider(),          // ✅ working – multi-step campus API
 
-  // ── BEST EFFORT: CN Big Tech (need auth, returns 0 gracefully) ─
+  // ── CN Big Tech (cookie-auth; skip if *_COOKIES env not set) ──
   new ByteDanceProvider(),
   new MeituanProvider(),
   new AlibabaProvider(),
