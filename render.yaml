@@ -1,0 +1,35 @@
+services:
+  # Main Next.js web app
+  - type: web
+    name: jobbb
+    runtime: node
+    region: singapore
+    plan: free
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: DATABASE_URL
+        sync: false          # Set manually in Render dashboard
+      - key: SYNC_SECRET
+        sync: false          # Set manually in Render dashboard
+      - key: NODE_ENV
+        value: production
+
+  # Daily cron job – triggers job sync at 2 AM Singapore time (18:00 UTC)
+  - type: cron
+    name: jobbb-daily-sync
+    runtime: node
+    region: singapore
+    plan: free
+    schedule: "0 18 * * *"
+    buildCommand: echo "ready"
+    startCommand: >
+      curl -s -X POST "$RENDER_APP_URL/api/jobs/sync"
+      -H "Content-Type: application/json"
+      -H "x-sync-secret: $SYNC_SECRET"
+      -d '{}' | cat
+    envVars:
+      - key: RENDER_APP_URL
+        sync: false          # Set to your Render web app URL, e.g. https://jobbb.onrender.com
+      - key: SYNC_SECRET
+        sync: false

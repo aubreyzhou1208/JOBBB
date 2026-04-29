@@ -1,8 +1,9 @@
 import { JobProvider } from "../base";
 import type { ScrapedJob } from "../types";
 
-// Google Careers public JSON API
+// Google Careers JSON API — the /api/jobs/search/ endpoint redirected; use the current path
 const BASE_URL = "https://careers.google.com/api/jobs/search/";
+const FALLBACK_URL = "https://www.google.com/about/careers/applications/api/jobs/search/";
 
 export class GoogleProvider extends JobProvider {
   readonly id = "google";
@@ -10,24 +11,30 @@ export class GoogleProvider extends JobProvider {
 
   async fetchJobs(): Promise<ScrapedJob[]> {
     const jobs: ScrapedJob[] = [];
-    let page = 1;
+    let start = 0;
+    const num = 20;
 
     while (true) {
       const params = new URLSearchParams({
-        q: "",
+        q: "intern OR internship OR new grad OR campus OR graduate",
         location: "China",
         jlo: "zh_CN",
-        has_remote: "false",
-        employment_type: "INTERN,FULL_TIME",
-        num: "50",
-        start: String((page - 1) * 50),
+        num: String(num),
+        start: String(start),
       });
 
-      const res = await this.fetchWithTimeout(`${BASE_URL}?${params}`, {
-        headers: this.headers({ Referer: "https://careers.google.com/" }),
-      });
+      // Try primary URL first, then fallback
+      let res: Response | null = null;
+      for (const base of [BASE_URL, FALLBACK_URL]) {
+        try {
+          res = await this.fetchWithTimeout(`${base}?${params}`, {
+            headers: this.headers({ Referer: "https://careers.google.com/" }),
+          });
+          if (res.ok) break;
+        } catch { continue; }
+      }
+      if (!res?.ok) break;
 
-      if (!res.ok) break;
       const data = await res.json();
       const list: unknown[] = data?.jobs ?? [];
       if (list.length === 0) break;
@@ -53,16 +60,16 @@ export class GoogleProvider extends JobProvider {
           source: this.id,
           sourceType: "careers_api",
           summary: String(p.description ?? "").replace(/<[^>]+>/g, "").slice(0, 500),
-          tags: isIntern ? ["实习"] : ["校招"],
+          tags: isIntern ? ["实习", "Intern"] : ["校招", "New Grad"],
           postedAt: this.now(),
           openedAt: this.now(),
           deadlineAt: this.defaultDeadline(),
         });
       }
 
-      if (list.length < 50) break;
-      page++;
-      if (page > 10) break;
+      if (list.length < num) break;
+      start += num;
+      if (start > 500) break;
     }
 
     return jobs;

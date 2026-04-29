@@ -17,9 +17,19 @@ import { JaneStreetProvider } from "./providers/jane-street";
 import { McKinseyProvider } from "./providers/mckinsey";
 import { CICCProvider, CITICProvider, HuataiProvider, EFundProvider, ChinaAMCProvider } from "./providers/cn-finance";
 
+/**
+ * Provider tiers:
+ *   ACTIVE  – confirmed working
+ *   BEST_EFFORT – endpoint exists but may require auth or return 0; kept for monitoring
+ *
+ * Chinese campus APIs (all except Tencent) require session login — returns 0 gracefully.
+ * Foreign finance ATS board tokens need manual verification before enabling.
+ */
 export const ALL_PROVIDERS: JobProvider[] = [
-  // 国内大厂
-  new TencentProvider(),
+  // ── ACTIVE ────────────────────────────────────────────────
+  new TencentProvider(),          // ✅ working – multi-step campus API
+
+  // ── BEST EFFORT: CN Big Tech (need auth, returns 0 gracefully) ─
   new ByteDanceProvider(),
   new MeituanProvider(),
   new AlibabaProvider(),
@@ -30,22 +40,22 @@ export const ALL_PROVIDERS: JobProvider[] = [
   new XiaohongshuProvider(),
   new DiDiProvider(),
 
-  // 外资科技
-  new GoogleProvider(),
-  new MicrosoftProvider(),
+  // ── BEST EFFORT: Foreign Tech ──────────────────────────────
+  new GoogleProvider(),           // tries primary + fallback URL
+  new MicrosoftProvider(),        // GCS API, may need header tuning
 
-  // 外资金融
+  // ── BEST EFFORT: Foreign Finance (Greenhouse board tokens unverified) ─
   GoldmanSachsProvider,
   MorganStanleyProvider,
   BlackRockProvider,
   new JPMorganProvider(),
-  new JaneStreetProvider(),
+  new JaneStreetProvider(),       // HTML scrape
 
-  // 咨询
+  // ── BEST EFFORT: Consulting ────────────────────────────────
   new McKinseyProvider(),
   BCGProvider,
 
-  // 国内金融
+  // ── BEST EFFORT: CN Finance (HTML scrape) ─────────────────
   new CICCProvider(),
   new CITICProvider(),
   new HuataiProvider(),

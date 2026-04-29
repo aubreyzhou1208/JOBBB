@@ -1,7 +1,8 @@
 import { JobProvider } from "../base";
 import type { ScrapedJob } from "../types";
 
-const BASE_URL = "https://careers.microsoft.com/us/en/search-results";
+// Microsoft careers search — GCS (Global Career Site) JSON API
+const GCS_URL = "https://gcsservices.careers.microsoft.com/search/api/v1/search";
 
 export class MicrosoftProvider extends JobProvider {
   readonly id = "microsoft";
@@ -9,29 +10,37 @@ export class MicrosoftProvider extends JobProvider {
 
   async fetchJobs(): Promise<ScrapedJob[]> {
     const jobs: ScrapedJob[] = [];
-    let from = 0;
-    const size = 50;
+    let start = 0;
+    const pgSz = 50;
 
     while (true) {
-      const res = await this.fetchWithTimeout(
-        `${BASE_URL}?keywords=&location=China&from=${from}&pgSz=${size}&rt=professional`,
-        {
-          headers: this.headers({
-            Accept: "application/json",
-            "x-api-key": "set1e4bfed42b46f2a3b4a1a7b4f1c7e9",
-            Referer: "https://careers.microsoft.com/",
-          }),
-        }
-      );
+      // Microsoft's GCS search API - works without auth for public listings
+      const params = new URLSearchParams({
+        q: "intern OR internship OR new grad OR campus OR graduate",
+        lc: "China",
+        l: "en_us",
+        pgSz: String(pgSz),
+        start: String(start),
+        rt: "professional",
+      });
+
+      const res = await this.fetchWithTimeout(`${GCS_URL}?${params}`, {
+        headers: this.headers({
+          Accept: "application/json",
+          Referer: "https://careers.microsoft.com/",
+        }),
+      });
 
       if (!res.ok) break;
+
       const data = await res.json();
-      const list: unknown[] = data?.operationResult?.result?.jobs ?? data?.jobs ?? [];
+      const list: unknown[] =
+        (data?.operationResult?.result?.jobs as unknown[]) ?? (data?.jobs as unknown[]) ?? [];
       if (list.length === 0) break;
 
       for (const p of list as Record<string, unknown>[]) {
         const title = String(p.title ?? p.jobTitle ?? "");
-        const isIntern = /intern/i.test(title) || String(p.jobType ?? "").toLowerCase().includes("intern");
+        const isIntern = /intern/i.test(title) || /intern/i.test(String(p.jobType ?? ""));
         const jobId = String(p.jobId ?? p.id ?? "");
         jobs.push({
           companyName: this.companyName,
@@ -51,9 +60,9 @@ export class MicrosoftProvider extends JobProvider {
         });
       }
 
-      if (list.length < size) break;
-      from += size;
-      if (from > 1000) break;
+      if (list.length < pgSz) break;
+      start += pgSz;
+      if (start > 1000) break;
     }
 
     return jobs;
