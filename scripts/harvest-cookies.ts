@@ -10,7 +10,9 @@
  * and writes them to .env automatically.
  */
 
-import puppeteer, { Browser, Page, Protocol } from "puppeteer-core";
+import puppeteer, { Browser, Page } from "puppeteer-core";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+type Cookie = import("puppeteer-core").Cookie;
 import * as fs from "fs";
 import * as path from "path";
 import * as readline from "readline";
@@ -111,7 +113,7 @@ function writeEnv(updates: Record<string, string>) {
   console.log(`✅ 已写入 .env`);
 }
 
-function serializeCookies(cookies: Protocol.Network.Cookie[]): string {
+function serializeCookies(cookies: Cookie[]): string {
   return cookies.map((c) => `${c.name}=${c.value}`).join("; ");
 }
 
@@ -119,7 +121,7 @@ async function waitForLogin(
   page: Page,
   successCookies: string[],
   timeoutMs = 180000
-): Promise<Protocol.Network.Cookie[] | null> {
+): Promise<Cookie[] | null> {
   const deadline = Date.now() + timeoutMs;
   console.log(`⏳ 等待你登录（最多 ${timeoutMs / 1000} 秒）…`);
 
