@@ -1,0 +1,191 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ApplicationStatus {
+  SAVED
+  APPLIED
+  OA
+  INTERVIEW
+  OFFER
+  REJECTED
+  GHOSTED
+}
+
+enum JobWorkMode {
+  REMOTE
+  HYBRID
+  ONSITE
+}
+
+enum JobEmploymentType {
+  FULL_TIME
+  INTERN
+  NEW_GRAD
+  CONTRACT
+}
+
+enum JobSyncStatus {
+  SUCCESS
+  FAILED
+}
+
+enum SourceDocumentType {
+  resume
+  job_description
+  transcript
+  other
+}
+
+model User {
+  id              String           @id @default(cuid())
+  name            String
+  email           String           @unique
+  timezone        String           @default("America/New_York")
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  resumeProfile   ResumeProfile?
+  manualJobs      JobPosting[]     @relation("ManualCreatedJobs")
+  jobBookmarks    JobBookmark[]
+  syncRuns        JobSyncRun[]
+  applications    Application[]
+  sourceDocuments SourceDocument[]
+}
+
+model ResumeProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  fullName    String
+  email       String
+  phone       String
+  school      String
+  major       String
+  degree      String
+  skills      String[]
+  projects    String
+  internships String
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Company {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  website     String?
+  industry    String?
+  location    String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  jobPostings JobPosting[]
+  applications Application[]
+}
+
+model JobPosting {
+  id              String            @id @default(cuid())
+  dedupeKey       String            @unique
+  companyId       String?
+  createdByUserId String?
+  companyName     String
+  title           String
+  location        String
+  workMode        JobWorkMode
+  employmentType  JobEmploymentType
+  salaryRange     String?
+  tags            String[]
+  normalizedTags  String[]
+  regionTags      String[]
+  roleTags        String[]
+  programTags     String[]
+  postedAt        DateTime
+  openedAt        DateTime
+  deadlineAt      DateTime
+  applyUrl        String
+  source          String
+  sourceJobId     String?
+  sourceType      String
+  summary         String
+  rawDescription  String?
+  notes           String?
+  isActive        Boolean           @default(true)
+  firstSeenAt     DateTime          @default(now())
+  lastSyncedAt    DateTime          @default(now())
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  company         Company?          @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  createdByUser   User?             @relation("ManualCreatedJobs", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  bookmarks       JobBookmark[]
+  applications    Application[]
+
+  @@index([companyName])
+  @@index([employmentType])
+  @@index([location])
+  @@index([lastSyncedAt])
+  @@index([sourceType, sourceJobId])
+}
+
+model JobBookmark {
+  id           String     @id @default(cuid())
+  userId       String
+  jobPostingId String
+  createdAt    DateTime   @default(now())
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobPosting   JobPosting @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jobPostingId])
+}
+
+model JobSyncRun {
+  id           String        @id @default(cuid())
+  userId       String?
+  providerId   String
+  providerLabel String
+  syncLabel    String
+  status       JobSyncStatus
+  query        String
+  startedAt    DateTime
+  finishedAt   DateTime
+  fetchedCount Int
+  createdCount Int
+  updatedCount Int
+  failedCount  Int           @default(0)
+  message      String
+  createdAt    DateTime      @default(now())
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+}
+
+model Application {
+  id           String            @id @default(cuid())
+  userId       String?
+  jobPostingId String?
+  companyId    String?
+  companyName  String
+  roleTitle    String
+  appliedAt    DateTime
+  status       ApplicationStatus
+  trackingUrl  String?
+  notes        String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  user         User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  jobPosting   JobPosting?       @relation(fields: [jobPostingId], references: [id], onDelete: SetNull)
+  company      Company?          @relation(fields: [companyId], references: [id], onDelete: SetNull)
+}
+
+model SourceDocument {
+  id         String             @id @default(cuid())
+  userId     String?
+  type       SourceDocumentType
+  name       String
+  fileUrl    String?
+  parsedText String?
+  createdAt  DateTime           @default(now())
+  user       User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+}

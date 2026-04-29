@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 100% 99%;
+    --foreground: 217 76% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 217 76% 8%;
+    --primary: 218 100% 66%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 100% 97%;
+    --secondary-foreground: 217 76% 8%;
+    --muted: 210 100% 98%;
+    --muted-foreground: 215 25% 47%;
+    --accent: 210 100% 97%;
+    --accent-foreground: 217 76% 8%;
+    --border: 0 0% 100%;
+    --input: 215 35% 92%;
+    --ring: 218 100% 66%;
+    --success: 158 64% 52%;
+    --warning: 357 100% 68%;
+    --danger: 357 100% 68%;
+    --radius: 1.25rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    background:
+      radial-gradient(circle at 12% 10%, rgba(79, 140, 255, 0.22), transparent 32%),
+      radial-gradient(circle at 88% 18%, rgba(52, 211, 153, 0.2), transparent 30%),
+      radial-gradient(circle at 80% 88%, rgba(255, 90, 95, 0.14), transparent 28%),
+      #f6faff;
+    color: #0f172a;
+  }
+
+  a {
+    @apply transition-colors;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.62);
+    backdrop-filter: blur(18px);
+    border: 1px solid rgba(255, 255, 255, 0.42);
+    box-shadow: 0 20px 60px rgba(79, 140, 255, 0.14);
+    border-radius: 1.5rem;
+  }
+}
