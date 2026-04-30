@@ -25,9 +25,12 @@ export class MicrosoftProvider extends JobProvider {
       });
 
       const res = await this.fetchWithTimeout(`${GCS_URL}?${params}`, {
+        redirect: "follow",
         headers: this.headers({
           Accept: "application/json",
+          "Accept-Language": "en-US,en;q=0.9",
           Referer: "https://careers.microsoft.com/",
+          Origin: "https://careers.microsoft.com",
         }),
       });
 

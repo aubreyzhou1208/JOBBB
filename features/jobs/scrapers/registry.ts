@@ -9,27 +9,25 @@ import { JDProvider } from "./providers/jd";
 import { KuaishouProvider } from "./providers/kuaishou";
 import { XiaohongshuProvider } from "./providers/xiaohongshu";
 import { DiDiProvider } from "./providers/didi";
-import { BlackRockProvider, GoldmanSachsProvider, MorganStanleyProvider, BCGProvider } from "./providers/greenhouse";
-import { GoogleProvider } from "./providers/google";
 import { MicrosoftProvider } from "./providers/microsoft";
-import { JPMorganProvider } from "./providers/jpmorgan";
 import { JaneStreetProvider } from "./providers/jane-street";
-import { McKinseyProvider } from "./providers/mckinsey";
 import { CICCProvider, CITICProvider, HuataiProvider, EFundProvider, ChinaAMCProvider } from "./providers/cn-finance";
 
 /**
- * Provider tiers:
- *   ACTIVE  – confirmed working
- *   BEST_EFFORT – endpoint exists but may require auth or return 0; kept for monitoring
+ * ACTIVE  – confirmed returning data
+ * COOKIE  – returns data only when *_COOKIES env var is set
+ * PENDING – API endpoint unverified; disabled until correct URL found
  *
- * Chinese campus APIs (all except Tencent) require session login — returns 0 gracefully.
- * Foreign finance ATS board tokens need manual verification before enabling.
+ * Disabled (PENDING): Google, Goldman Sachs, Morgan Stanley, BlackRock,
+ *   JP Morgan, McKinsey, BCG — their ATS endpoints need browser-level
+ *   network inspection to discover. Re-enable once board tokens confirmed.
  */
 export const ALL_PROVIDERS: JobProvider[] = [
-  // ── ACTIVE ────────────────────────────────────────────────
-  new TencentProvider(),          // ✅ working – multi-step campus API
+  // ── ACTIVE ────────────────────────────────────────────────────
+  new TencentProvider(),       // ✅ 200+ campus jobs via public API
+  new JaneStreetProvider(),    // ✅ Greenhouse board: janestreet
 
-  // ── CN Big Tech (cookie-auth; skip if *_COOKIES env not set) ──
+  // ── ACTIVE when *_COOKIES set (cookie harvester) ──────────────
   new ByteDanceProvider(),
   new MeituanProvider(),
   new AlibabaProvider(),
@@ -40,27 +38,24 @@ export const ALL_PROVIDERS: JobProvider[] = [
   new XiaohongshuProvider(),
   new DiDiProvider(),
 
-  // ── BEST EFFORT: Foreign Tech ──────────────────────────────
-  new GoogleProvider(),           // tries primary + fallback URL
-  new MicrosoftProvider(),        // GCS API, may need header tuning
+  // ── BEST EFFORT: Foreign Tech ─────────────────────────────────
+  new MicrosoftProvider(),     // GCS API – may return 0 without auth
 
-  // ── BEST EFFORT: Foreign Finance (Greenhouse board tokens unverified) ─
-  GoldmanSachsProvider,
-  MorganStanleyProvider,
-  BlackRockProvider,
-  new JPMorganProvider(),
-  new JaneStreetProvider(),       // HTML scrape
-
-  // ── BEST EFFORT: Consulting ────────────────────────────────
-  new McKinseyProvider(),
-  BCGProvider,
-
-  // ── BEST EFFORT: CN Finance (HTML scrape) ─────────────────
+  // ── BEST EFFORT: CN Finance (HTML scrape) ─────────────────────
   new CICCProvider(),
   new CITICProvider(),
   new HuataiProvider(),
   new EFundProvider(),
   new ChinaAMCProvider(),
+
+  // ── PENDING (wrong ATS tokens / need browser inspection) ──────
+  // new GoogleProvider(),        // SPA – need XHR endpoint
+  // GoldmanSachsProvider,        // Not Greenhouse – ATS unknown
+  // MorganStanleyProvider,       // Not Greenhouse – ATS unknown
+  // BlackRockProvider,           // Workday – board name unknown
+  // new JPMorganProvider(),      // Has DDOS protection
+  // new McKinseyProvider(),      // Workday – board name unknown
+  // BCGProvider,                 // Workday – board name unknown
 ];
 
 export const PROVIDER_IDS = ALL_PROVIDERS.map((p) => p.id);

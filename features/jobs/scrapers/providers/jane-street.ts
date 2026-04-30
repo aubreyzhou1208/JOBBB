@@ -1,55 +1,51 @@
 import { JobProvider } from "../base";
 import type { ScrapedJob } from "../types";
-import * as cheerio from "cheerio";
 
-const JOBS_URL = "https://www.janestreet.com/join-jane-street/positions/";
+// Jane Street uses Greenhouse ATS (board token: janestreet)
+const GH_URL = "https://api.greenhouse.io/v1/boards/janestreet/jobs?content=true";
+
+const CAMPUS_KW = ["intern", "campus", "graduate", "new grad", "entry", "associate", "analyst", "quant", "trader", "researcher", "engineer", "developer"];
 
 export class JaneStreetProvider extends JobProvider {
   readonly id = "jane-street";
   readonly companyName = "Jane Street";
 
   async fetchJobs(): Promise<ScrapedJob[]> {
-    const res = await this.fetchWithTimeout(JOBS_URL, {
-      headers: this.headers({ Accept: "text/html,application/xhtml+xml" }),
-    });
+    const res = await this.fetchWithTimeout(GH_URL, { headers: this.headers() });
+    if (!res.ok) throw new Error(`Jane Street Greenhouse: ${res.status}`);
 
-    if (!res.ok) throw new Error(`Jane Street: ${res.status}`);
-    const html = await res.text();
-    const $ = cheerio.load(html);
-    const jobs: ScrapedJob[] = [];
+    const data = await res.json();
+    const allJobs: Record<string, unknown>[] = (data?.jobs ?? []) as Record<string, unknown>[];
 
-    $(".position-row, .job-listing, article.position, .positions-list li, .js-positions-item").each((_, el) => {
-      const title = $(el).find(".position-title, h3, h2, .title").first().text().trim();
-      const location = $(el).find(".position-location, .location").first().text().trim() || "New York";
-      const link = $(el).find("a").first().attr("href") ?? "";
-      const applyUrl = link.startsWith("http") ? link : `https://www.janestreet.com${link}`;
-      const jobId = link.split("/").filter(Boolean).pop() ?? title.toLowerCase().replace(/\s+/g, "-");
-
-      if (!title) return;
-
-      const isIntern = /intern/i.test(title);
-      // Jane Street China is Hong Kong office
-      const isChinaRelated = /hong kong|hk|china|asia/i.test(location) || /hk|asia/i.test(title);
-      if (!isChinaRelated && jobs.length > 0) return; // keep all if no China filter, otherwise filter
-
-      jobs.push({
-        companyName: this.companyName,
-        title,
-        location,
-        workMode: "ONSITE",
-        employmentType: isIntern ? "INTERN" : "NEW_GRAD",
-        applyUrl,
-        sourceJobId: jobId,
-        source: this.id,
-        sourceType: "html_scrape",
-        summary: $(el).find(".position-description, .description, p").first().text().trim().slice(0, 500),
-        tags: isIntern ? ["Intern", "实习"] : ["New Grad", "校招"],
-        postedAt: this.now(),
-        openedAt: this.now(),
-        deadlineAt: this.defaultDeadline(),
+    // Jane Street doesn't have "campus" specific boards — take all tech/quant roles
+    // Filter to intern/new-grad-level by title keywords
+    return allJobs
+      .filter((j) => {
+        const title = String(j.title ?? "").toLowerCase();
+        return CAMPUS_KW.some((kw) => title.includes(kw));
+      })
+      .map((j) => {
+        const title = String(j.title ?? "");
+        const isIntern = /intern/i.test(title);
+        const jobId = String(j.id ?? "");
+        const location = (j.location as Record<string, unknown>)?.name ?? "New York";
+        return {
+          companyName: this.companyName,
+          title,
+          location: String(location),
+          workMode: "ONSITE" as const,
+          employmentType: isIntern ? "INTERN" as const : "NEW_GRAD" as const,
+          applyUrl: String(j.absolute_url ?? `https://boards.greenhouse.io/janestreet/jobs/${jobId}`),
+          sourceJobId: jobId,
+          source: this.id,
+          sourceType: "greenhouse",
+          summary: String((j.content as Record<string, unknown>)?.description ?? j.content ?? "")
+            .replace(/<[^>]+>/g, "").slice(0, 500),
+          tags: isIntern ? ["Intern", "实习"] : ["New Grad", "校招"],
+          postedAt: j.updated_at ? new Date(String(j.updated_at)) : this.now(),
+          openedAt: this.now(),
+          deadlineAt: this.defaultDeadline(),
+        };
       });
-    });
-
-    return jobs;
   }
 }
