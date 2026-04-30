@@ -57,6 +57,7 @@ export async function GET(request: Request) {
         source: true,
         sourceType: true,
         summary: true,
+        rawDescription: true,
         firstSeenAt: true,
         lastSyncedAt: true,
       },

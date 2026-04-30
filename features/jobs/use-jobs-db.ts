@@ -26,6 +26,7 @@ interface ApiJob {
   source: string;
   sourceType: string;
   summary: string;
+  rawDescription: string | null;
   firstSeenAt: string;
   lastSyncedAt: string;
 }
@@ -60,6 +61,7 @@ function toJobPosting(j: ApiJob, savedIds: Set<string>): JobPosting {
     sourceJobId: j.dedupeKey,
     sourceType: j.sourceType,
     summary: j.summary,
+    rawDescription: j.rawDescription ?? undefined,
     isSaved: savedIds.has(j.id),
   };
 }

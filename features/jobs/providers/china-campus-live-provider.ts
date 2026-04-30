@@ -290,18 +290,20 @@ function formatTencentLocation(workCities: string[]) {
 }
 
 function buildTencentSummary(detail: NonNullable<TencentDetailResponse["data"]>, workCities: string[], projectTag: string) {
-  const summarySeed = normalizeText(detail.introduction || detail.desc || detail.request || "");
-  if (summarySeed) {
-    return [projectTag, summarySeed]
-      .filter(Boolean)
-      .join(" · ")
-      .slice(0, 220);
+  const parts = [
+    detail.introduction ? `岗位介绍\n${normalizeText(detail.introduction)}` : "",
+    detail.desc ? `岗位职责\n${normalizeText(detail.desc)}` : "",
+    detail.request ? `任职资格\n${normalizeText(detail.request)}` : "",
+  ].filter(Boolean);
+
+  if (parts.length > 0) {
+    return [projectTag, ...parts].filter(Boolean).join("\n\n").slice(0, 2000);
   }
 
   return [`${detail.title ?? "腾讯岗位"}`, projectTag, workCities.join(" / ")]
     .filter(Boolean)
     .join(" · ")
-    .slice(0, 220);
+    .slice(0, 500);
 }
 
 function buildTencentRawDescription(detail: NonNullable<TencentDetailResponse["data"]>, projectTag: string) {
