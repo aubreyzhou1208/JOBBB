@@ -24,7 +24,7 @@ export class GreenhouseProvider extends JobProvider {
   async fetchJobs(): Promise<ScrapedJob[]> {
     const url = `https://api.greenhouse.io/v1/boards/${this.boardToken}/jobs?content=true`;
     const res = await this.fetchWithTimeout(url, { headers: this.headers() });
-    if (!res.ok) throw new Error(`Greenhouse ${this.boardToken}: ${res.status}`);
+    if (!res.ok) return []; // board token not yet confirmed — skip silently
 
     const data = await res.json();
     const allJobs: unknown[] = data?.jobs ?? [];

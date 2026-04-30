@@ -21,8 +21,9 @@ export class JaneStreetProvider extends JobProvider {
     // Filter to intern/new-grad-level by title keywords
     return allJobs
       .filter((j) => {
-        const title = String(j.title ?? "").toLowerCase();
-        return CAMPUS_KW.some((kw) => title.includes(kw));
+        // Only Hong Kong positions (Jane Street's China-region office)
+        const loc = String((j.location as Record<string, unknown>)?.name ?? "").toLowerCase();
+        return loc.includes("hong kong") || loc.includes("hk");
       })
       .map((j) => {
         const title = String(j.title ?? "");

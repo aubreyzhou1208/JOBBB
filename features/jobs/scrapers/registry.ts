@@ -10,17 +10,18 @@ import { KuaishouProvider } from "./providers/kuaishou";
 import { XiaohongshuProvider } from "./providers/xiaohongshu";
 import { DiDiProvider } from "./providers/didi";
 import { CICCProvider, CITICProvider, HuataiProvider, EFundProvider, ChinaAMCProvider } from "./providers/cn-finance";
+import { JaneStreetProvider } from "./providers/jane-street";
+import { MicrosoftProvider } from "./providers/microsoft";
+import { GoogleProvider } from "./providers/google";
+import { JPMorganProvider } from "./providers/jpmorgan";
+import { McKinseyProvider } from "./providers/mckinsey";
+import { BlackRockProvider, GoldmanSachsProvider, MorganStanleyProvider, BCGProvider } from "./providers/greenhouse";
 
-/**
- * All providers are Chinese companies only.
- * ACTIVE  – confirmed returning data without auth
- * COOKIE  – reads *_COOKIES env var; skips if not set
- */
 export const ALL_PROVIDERS: JobProvider[] = [
-  // ── ACTIVE ─────────────────────────────────────────
-  new TencentProvider(),       // ✅ 200+ campus jobs
+  // ── 中国大厂 ────────────────────────────────────────
+  new TencentProvider(),       // ✅ 200+ 校招岗位
 
-  // ── COOKIE (set via scripts/harvest-cookies.ts) ────
+  // ── 中国大厂（需 cookie） ───────────────────────────
   new ByteDanceProvider(),
   new MeituanProvider(),
   new AlibabaProvider(),
@@ -31,12 +32,24 @@ export const ALL_PROVIDERS: JobProvider[] = [
   new XiaohongshuProvider(),
   new DiDiProvider(),
 
-  // ── CN Finance (HTML scrape) ───────────────────────
+  // ── 中国金融 ─────────────────────────────────────────
   new CICCProvider(),
   new CITICProvider(),
   new HuataiProvider(),
   new EFundProvider(),
   new ChinaAMCProvider(),
+
+  // ── 外企在华/港 ────────────────────────────────────
+  // 仅抓中国大陆 + 香港的岗位；没数据时静默返回 []
+  new GoogleProvider(),
+  new MicrosoftProvider(),
+  new JaneStreetProvider(),    // ✅ Greenhouse，已过滤香港岗位
+  new JPMorganProvider(),
+  new McKinseyProvider(),
+  GoldmanSachsProvider,        // Greenhouse token 待确认
+  MorganStanleyProvider,       // Greenhouse token 待确认
+  BlackRockProvider,           // Greenhouse token 待确认
+  BCGProvider,                 // Greenhouse token 待确认
 ];
 
 export const PROVIDER_IDS = ALL_PROVIDERS.map((p) => p.id);

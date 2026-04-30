@@ -20,6 +20,7 @@ export class JPMorganProvider extends JobProvider {
         body: JSON.stringify({
           keyword: "",
           location: "China",
+          country: "China",
           jobCategory: "",
           start,
           rows,

@@ -1,9 +1,10 @@
 import { JobProvider } from "../base";
 import type { ScrapedJob } from "../types";
 
-// Google Careers JSON API — the /api/jobs/search/ endpoint redirected; use the current path
-const BASE_URL = "https://careers.google.com/api/jobs/search/";
-const FALLBACK_URL = "https://www.google.com/about/careers/applications/api/jobs/search/";
+// Google Careers — search with China location filter
+// API has changed; using current known endpoint
+const BASE_URL = "https://www.google.com/about/careers/applications/jobs/results/";
+const API_URL = "https://careers.google.com/api/jobs/search/";
 
 export class GoogleProvider extends JobProvider {
   readonly id = "google";
@@ -16,18 +17,18 @@ export class GoogleProvider extends JobProvider {
 
     while (true) {
       const params = new URLSearchParams({
-        q: "intern OR internship OR new grad OR campus OR graduate",
+        q: "intern OR internship OR campus OR graduate",
         location: "China",
-        jlo: "zh_CN",
+        jlo: "en_US",
         num: String(num),
         start: String(start),
       });
 
-      // Try primary URL first, then fallback
       let res: Response | null = null;
-      for (const base of [BASE_URL, FALLBACK_URL]) {
+      for (const base of [API_URL, BASE_URL]) {
         try {
           res = await this.fetchWithTimeout(`${base}?${params}`, {
+            redirect: "follow",
             headers: this.headers({ Referer: "https://careers.google.com/" }),
           });
           if (res.ok) break;
