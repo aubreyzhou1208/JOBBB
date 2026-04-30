@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle
@@ -44,6 +43,19 @@ const jobSchema = z.object({
 
 type JobFormValues = z.infer<typeof jobSchema>;
 
+const workModeLabels: Record<JobWorkMode, string> = {
+  REMOTE: "远程",
+  HYBRID: "混合",
+  ONSITE: "现场"
+};
+
+const employmentTypeLabels: Record<JobEmploymentType, string> = {
+  FULL_TIME: "全职",
+  INTERN: "实习",
+  NEW_GRAD: "校招",
+  CONTRACT: "合同"
+};
+
 export function JobFormDialog({
   open,
   onOpenChange,
@@ -57,7 +69,7 @@ export function JobFormDialog({
   onSubmit: (values: JobPostingInput) => void;
   mode: "create" | "edit";
 }) {
-const form = useForm<JobFormValues>({
+  const form = useForm<JobFormValues>({
     resolver: zodResolver(jobSchema),
     defaultValues: {
       ...initialValues,
@@ -72,34 +84,91 @@ const form = useForm<JobFormValues>({
     } as unknown as JobFormValues);
   }, [form, initialValues]);
 
-  const workModeLabels: Record<JobWorkMode, string> = {
-    REMOTE: "远程",
-    HYBRID: "混合",
-    ONSITE: "现场"
-  };
+  const [parseUrl, setParseUrl] = useState("");
+  const [parsing, setParsing] = useState(false);
+  const [parseError, setParseError] = useState("");
 
-  const employmentTypeLabels: Record<JobEmploymentType, string> = {
-    FULL_TIME: "全职",
-    INTERN: "实习",
-    NEW_GRAD: "校招",
-    CONTRACT: "合同"
-  };
+  async function handleParse() {
+    if (!parseUrl.trim()) return;
+    setParsing(true);
+    setParseError("");
+    try {
+      const res = await fetch("/api/jobs/parse-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: parseUrl.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.job) {
+        setParseError(data.error || "解析失败，请手动填写");
+        return;
+      }
+      const j = data.job;
+      const today = new Date().toISOString().slice(0, 10);
+      form.setValue("companyName", j.companyName || "");
+      form.setValue("title", j.title || "");
+      form.setValue("location", j.location || "");
+      form.setValue("employmentType", j.employmentType || "FULL_TIME");
+      form.setValue("workMode", j.workMode || "ONSITE");
+      form.setValue("applyUrl", j.applyUrl || parseUrl);
+      form.setValue("source", new URL(parseUrl).hostname.replace("www.", ""));
+      form.setValue("sourceType", "manual_url");
+      form.setValue("summary", j.summary || "");
+      form.setValue("rawDescription", j.rawDescription || "");
+      form.setValue("salaryRange", j.salaryRange || "");
+      form.setValue("postedAt", today);
+      form.setValue("openedAt", today);
+      if (j.deadlineAt) form.setValue("deadlineAt", j.deadlineAt);
+      // Auto-generate tags from company + type
+      const typeTag = j.employmentType === "INTERN" ? "实习" : j.employmentType === "NEW_GRAD" ? "校招" : "全职";
+      form.setValue("tags", [j.companyName, typeTag].filter(Boolean).join(", "));
+    } catch {
+      setParseError("网络错误，请手动填写");
+    } finally {
+      setParsing(false);
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto max-w-2xl">
         <DialogHeader>
           <DialogTitle>{mode === "create" ? "新增岗位" : "编辑岗位"}</DialogTitle>
-          <DialogDescription>这里的字段会作为未来 OCR / AI 解析结果的标准落库结构。</DialogDescription>
         </DialogHeader>
+
+        {/* URL 解析区域 */}
+        {mode === "create" && (
+          <div className="rounded-2xl border border-dashed border-white/30 bg-white/10 p-4 space-y-2">
+            <p className="text-xs text-muted-foreground">粘贴招聘链接，AI 自动填写所有字段</p>
+            <div className="flex gap-2">
+              <Input
+                placeholder="https://jobs.bytedance.com/..."
+                value={parseUrl}
+                onChange={(e) => setParseUrl(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleParse()}
+                className="flex-1 text-sm"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleParse}
+                disabled={parsing || !parseUrl.trim()}
+                className="shrink-0"
+              >
+                {parsing ? "解析中…" : "✨ 解析"}
+              </Button>
+            </div>
+            {parseError && <p className="text-xs text-rose-500">{parseError}</p>}
+          </div>
+        )}
 
         <form
           className="grid gap-4 md:grid-cols-2"
           onSubmit={form.handleSubmit((values) => {
-          onSubmit({
+            onSubmit({
               ...values,
               companyId: values.companyId ?? "",
-              tags: values.tags.split(",").map((item) => item.trim()).filter(Boolean),
+              tags: values.tags.split(",").map((t) => t.trim()).filter(Boolean),
               isSaved: initialValues.isSaved
             });
             onOpenChange(false);
@@ -123,40 +192,30 @@ const form = useForm<JobFormValues>({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="source">信息来源</Label>
-            <Input id="source" {...form.register("source")} />
-          </div>
-
-          <div className="space-y-2">
-            <Label>办公方式</Label>
-            <Select value={form.watch("workMode")} onValueChange={(value) => form.setValue("workMode", value as JobWorkMode)}>
-              <SelectTrigger>
-                <SelectValue placeholder="选择办公方式" />
-              </SelectTrigger>
+            <Label>岗位类型</Label>
+            <Select
+              value={form.watch("employmentType")}
+              onValueChange={(v) => form.setValue("employmentType", v as JobEmploymentType)}
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {Object.entries(workModeLabels).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
+                {Object.entries(employmentTypeLabels).map(([v, l]) => (
+                  <SelectItem key={v} value={v}>{l}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <Label>岗位类型</Label>
+            <Label>办公方式</Label>
             <Select
-              value={form.watch("employmentType")}
-              onValueChange={(value) => form.setValue("employmentType", value as JobEmploymentType)}
+              value={form.watch("workMode")}
+              onValueChange={(v) => form.setValue("workMode", v as JobWorkMode)}
             >
-              <SelectTrigger>
-                <SelectValue placeholder="选择岗位类型" />
-              </SelectTrigger>
+              <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {Object.entries(employmentTypeLabels).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
+                {Object.entries(workModeLabels).map(([v, l]) => (
+                  <SelectItem key={v} value={v}>{l}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -164,7 +223,13 @@ const form = useForm<JobFormValues>({
 
           <div className="space-y-2">
             <Label htmlFor="salaryRange">薪资范围</Label>
-            <Input id="salaryRange" {...form.register("salaryRange")} />
+            <Input id="salaryRange" {...form.register("salaryRange")} placeholder="如 200元/天" />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="deadlineAt">截止时间</Label>
+            <Input id="deadlineAt" type="date" {...form.register("deadlineAt")} />
+            <p className="text-xs text-rose-600">{form.formState.errors.deadlineAt?.message}</p>
           </div>
 
           <div className="space-y-2">
@@ -172,58 +237,43 @@ const form = useForm<JobFormValues>({
             <Input id="postedAt" type="date" {...form.register("postedAt")} />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="openedAt">开放时间</Label>
-            <Input id="openedAt" type="date" {...form.register("openedAt")} />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="deadlineAt">截止时间</Label>
-            <Input id="deadlineAt" type="date" {...form.register("deadlineAt")} />
-          </div>
-
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="applyUrl">申请链接</Label>
             <Input id="applyUrl" {...form.register("applyUrl")} />
+            <p className="text-xs text-rose-600">{form.formState.errors.applyUrl?.message}</p>
           </div>
 
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="tags">标签</Label>
-            <Input id="tags" {...form.register("tags")} placeholder="React, Frontend, New Grad" />
+            <Input id="tags" {...form.register("tags")} placeholder="字节跳动, 实习, 产品" />
             <p className="text-xs text-rose-600">{form.formState.errors.tags?.message}</p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="sourceType">来源类型</Label>
-            <Input id="sourceType" {...form.register("sourceType")} />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="sourceJobId">来源岗位 ID</Label>
-            <Input id="sourceJobId" {...form.register("sourceJobId")} />
           </div>
 
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="summary">岗位摘要</Label>
-            <Textarea id="summary" {...form.register("summary")} className="min-h-[110px]" />
+            <Textarea id="summary" {...form.register("summary")} className="min-h-[100px]" />
             <p className="text-xs text-rose-600">{form.formState.errors.summary?.message}</p>
           </div>
 
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="rawDescription">原始描述</Label>
-            <Textarea id="rawDescription" {...form.register("rawDescription")} className="min-h-[140px]" />
+            <Label htmlFor="rawDescription">完整描述</Label>
+            <Textarea id="rawDescription" {...form.register("rawDescription")} className="min-h-[120px]" />
           </div>
 
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="notes">备注</Label>
-            <Textarea id="notes" {...form.register("notes")} />
+            <Textarea id="notes" {...form.register("notes")} placeholder="面试准备、内推人、注意事项…" />
           </div>
 
+          {/* Hidden fields */}
+          <input type="hidden" {...form.register("source")} />
+          <input type="hidden" {...form.register("sourceType")} />
+          <input type="hidden" {...form.register("sourceJobId")} />
+          <input type="hidden" {...form.register("openedAt")} />
+
           <DialogFooter className="md:col-span-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              取消
-            </Button>
-            <Button type="submit">{mode === "create" ? "创建岗位" : "保存修改"}</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
+            <Button type="submit">{mode === "create" ? "添加岗位" : "保存修改"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
