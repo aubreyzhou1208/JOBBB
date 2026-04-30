@@ -95,6 +95,13 @@ export async function runFullSync(providerIds?: string[]): Promise<SyncReport> {
 
   const finishedAt = new Date();
 
+  // Deactivate jobs whose source provider is no longer in the registry
+  const activeSourceIds = new Set(ALL_PROVIDERS.map((p) => p.id));
+  await prisma.jobPosting.updateMany({
+    where: { isActive: true, source: { notIn: [...activeSourceIds] } },
+    data: { isActive: false },
+  });
+
   // Record the sync run
   await prisma.jobSyncRun.create({
     data: {

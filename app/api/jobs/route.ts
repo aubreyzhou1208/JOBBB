@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   const programTag = searchParams.get("programTag") ?? "";
   const company = searchParams.get("company") ?? "";
   const page = Math.max(1, Number(searchParams.get("page") ?? 1));
-  const pageSize = Math.min(100, Number(searchParams.get("pageSize") ?? 50));
+  const pageSize = Math.min(500, Number(searchParams.get("pageSize") ?? 50));
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: any = {
