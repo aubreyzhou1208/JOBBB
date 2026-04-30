@@ -132,10 +132,9 @@ export function useJobsDB() {
   const syncJobs = useCallback(async () => {
     setSyncing(true);
     try {
-      const res = await fetch("/api/jobs/sync", {
+      const res = await fetch("/api/jobs/trigger", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-sync-secret": "dev-secret" },
-        body: JSON.stringify({}),
+        headers: { "Content-Type": "application/json" },
       });
       const data = await res.json();
       setLastSync(data.report ?? null);
