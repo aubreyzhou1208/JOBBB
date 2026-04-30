@@ -462,7 +462,7 @@ async function searchTencentCampusSource(query: string, source: CompanyCampusPor
         postedAt: today,
         openedAt: today,
         deadlineAt: fallbackDeadline(today, 45),
-        applyUrl: `${source.baseUrl ?? "https://join.qq.com"}/jobdesc.html?postId=${entry.item.postId}`,
+        applyUrl: `${source.baseUrl ?? "https://join.qq.com"}/post.html?pid=${entry.item.postId}`,
         source: source.sourceLabel,
         sourceJobId: `${source.key}-${entry.item.postId}`,
         sourceType: "企业校招官网",
