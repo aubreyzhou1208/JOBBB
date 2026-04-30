@@ -12,7 +12,7 @@ const TARGETS = [
 ];
 
 function cleanTitle(raw: string): string {
-  return raw.replace(/&#x[0-9a-f]+;?/gi, "").replace(/-\s*$/, "").trim();
+  return raw.replace(/&#x[0-9a-f]+;?/gi, "").replace(/[-（(（]\s*$/, "").trim();
 }
 
 interface SxsJob {
