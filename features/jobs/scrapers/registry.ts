@@ -10,6 +10,7 @@ import { KuaishouProvider } from "./providers/kuaishou";
 import { XiaohongshuProvider } from "./providers/xiaohongshu";
 import { DiDiProvider } from "./providers/didi";
 import { CICCProvider, CITICProvider, HuataiProvider, EFundProvider, ChinaAMCProvider } from "./providers/cn-finance";
+import { ShixisengProvider } from "./providers/shixiseng";
 import { MicrosoftProvider } from "./providers/microsoft";
 import { GoogleProvider } from "./providers/google";
 import { JPMorganProvider } from "./providers/jpmorgan";
@@ -30,6 +31,9 @@ export const ALL_PROVIDERS: JobProvider[] = [
   new KuaishouProvider(),
   new XiaohongshuProvider(),
   new DiDiProvider(),
+
+  // ── 聚合平台（无需登录）────────────────────────────────
+  new ShixisengProvider(),     // 实习僧：字节/阿里/百度/美团等实习岗
 
   // ── 中国金融 ─────────────────────────────────────────
   new CICCProvider(),
