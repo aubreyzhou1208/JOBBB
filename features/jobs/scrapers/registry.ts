@@ -10,7 +10,6 @@ import { KuaishouProvider } from "./providers/kuaishou";
 import { XiaohongshuProvider } from "./providers/xiaohongshu";
 import { DiDiProvider } from "./providers/didi";
 import { CICCProvider, CITICProvider, HuataiProvider, EFundProvider, ChinaAMCProvider } from "./providers/cn-finance";
-import { JaneStreetProvider } from "./providers/jane-street";
 import { MicrosoftProvider } from "./providers/microsoft";
 import { GoogleProvider } from "./providers/google";
 import { JPMorganProvider } from "./providers/jpmorgan";
@@ -43,7 +42,6 @@ export const ALL_PROVIDERS: JobProvider[] = [
   // 仅抓中国大陆 + 香港的岗位；没数据时静默返回 []
   new GoogleProvider(),
   new MicrosoftProvider(),
-  new JaneStreetProvider(),    // ✅ Greenhouse，已过滤香港岗位
   new JPMorganProvider(),
   new McKinseyProvider(),
   GoldmanSachsProvider,        // Greenhouse token 待确认

@@ -101,10 +101,25 @@ export function useJobsDB() {
   const fetchJobs = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/jobs?pageSize=500");
-      if (!res.ok) throw new Error("fetch failed");
-      const data = await res.json();
-      setAllJobs(data.jobs ?? []);
+      const [jobsRes, statsRes] = await Promise.all([
+        fetch("/api/jobs?pageSize=500"),
+        fetch("/api/stats"),
+      ]);
+      if (jobsRes.ok) {
+        const data = await jobsRes.json();
+        setAllJobs(data.jobs ?? []);
+      }
+      if (statsRes.ok) {
+        const stats = await statsRes.json();
+        if (stats.lastSync) {
+          setLastSync({
+            totalFetched: stats.lastSync.fetchedCount ?? 0,
+            saved: stats.lastSync.createdCount ?? 0,
+            updated: stats.lastSync.updatedCount ?? 0,
+            providers: [],
+          });
+        }
+      }
     } catch (err) {
       console.error("[useJobsDB] fetch error:", err);
     } finally {
@@ -119,7 +134,7 @@ export function useJobsDB() {
     try {
       const res = await fetch("/api/jobs/sync", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-sync-secret": "local-dev-secret" },
+        headers: { "Content-Type": "application/json", "x-sync-secret": "dev-secret" },
         body: JSON.stringify({}),
       });
       const data = await res.json();

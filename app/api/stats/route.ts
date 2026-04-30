@@ -57,6 +57,9 @@ export async function GET() {
           finishedAt: lastSync.finishedAt,
           message: lastSync.message,
           status: lastSync.status,
+          fetchedCount: lastSync.fetchedCount,
+          createdCount: lastSync.createdCount,
+          updatedCount: lastSync.updatedCount,
         }
       : null,
     recentJobs,
