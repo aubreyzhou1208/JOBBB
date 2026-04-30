@@ -176,8 +176,8 @@ export const companyCampusPortalSources: CompanyCampusPortalSource[] = [
       searchUrl: "https://join.qq.com/api/v1/position/searchPosition",
       detailUrl: "https://join.qq.com/api/v1/jobDetails/getJobDetailsByPostId",
       referer: "https://join.qq.com/post.html?query=p_2",
-      pageSize: 40,
-      maxPages: 5,
+      pageSize: 50,
+      maxPages: 30,
       hongKongCityName: "中国香港",
       mainlandRegionLabel: "中国大陆",
       hongKongRegionLabel: "中国香港"
