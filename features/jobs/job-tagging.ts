@@ -68,22 +68,30 @@ function getProgramTags(job: TaggableJob, text: string, rawTags: string[]) {
   return Array.from(new Set(matched));
 }
 
-function getRegionTags(job: TaggableJob, text: string, rawTags: string[]) {
-  const regions: string[] = [];
+const CITY_MAP: Array<{ tag: string; keywords: string[] }> = [
+  { tag: "北京",   keywords: ["北京"] },
+  { tag: "上海",   keywords: ["上海"] },
+  { tag: "深圳",   keywords: ["深圳"] },
+  { tag: "广州",   keywords: ["广州"] },
+  { tag: "杭州",   keywords: ["杭州"] },
+  { tag: "成都",   keywords: ["成都"] },
+  { tag: "武汉",   keywords: ["武汉"] },
+  { tag: "南京",   keywords: ["南京"] },
+  { tag: "西安",   keywords: ["西安"] },
+  { tag: "苏州",   keywords: ["苏州"] },
+  { tag: "重庆",   keywords: ["重庆"] },
+  { tag: "天津",   keywords: ["天津"] },
+  { tag: "香港",   keywords: ["香港", "hong kong", "hk"] },
+];
 
-  if (text.includes("中国香港") || text.includes("hong kong") || rawTags.includes("中国香港")) {
-    regions.push("中国香港");
-  }
+function getRegionTags(job: TaggableJob, text: string, _rawTags: string[]) {
+  const loc = job.location.toLowerCase();
+  const cities = CITY_MAP.filter((c) => c.keywords.some((kw) => loc.includes(kw) || text.includes(kw))).map((c) => c.tag);
 
-  if (
-    ["北京", "上海", "深圳", "广州", "杭州", "成都", "武汉", "南京", "青岛", "郑州", "西安", "厦门", "中国大陆"].some((item) =>
-      text.includes(item.toLowerCase())
-    ) || rawTags.includes("中国大陆")
-  ) {
-    regions.push("中国大陆");
-  }
+  // If location has multiple cities or no match → "全国/多地"
+  if (cities.length === 0) cities.push("全国/多地");
 
-  return Array.from(new Set(regions));
+  return Array.from(new Set(cities));
 }
 
 function fallbackProgramTag(employmentType: JobEmploymentType) {
